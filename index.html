@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Post Viewer</title>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-color: #3b82f6;
+            --text-color: #e5e7eb;
+            --text-secondary-color: #9ca3af;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --border-color: #374151;
+            --source-missav-bg: #8b5cf6;
+            --source-onejav-bg: #ec4899;
+            --source-javguru-bg: #10b981;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0; padding: 1.5rem;
+        }
+        .container { max-width: 1800px; margin: 0 auto; }
+        .main-header {
+            text-align: center; font-size: 2.25rem; font-weight: 700;
+            margin-bottom: 0.5rem; color: var(--text-color);
+        }
+        .header-stats {
+            text-align: center; font-size: 0.9rem; color: var(--text-secondary-color);
+            margin-bottom: 1.5rem; display: flex; justify-content: center;
+            gap: 1.5rem; flex-wrap: wrap; height: 20px;
+        }
+        .stat-item strong { color: var(--text-color); }
+        
+        /* --- Filter Buttons --- */
+        .filter-container {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary-color);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .filter-btn:hover {
+            color: var(--text-color);
+            border-color: var(--primary-color);
+        }
+        .filter-btn.active {
+            color: #fff;
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .search-container { margin: 0 auto 2.5rem auto; max-width: 500px; }
+        #search-input {
+            width: 100%; box-sizing: border-box; padding: 0.75rem 1rem;
+            border-radius: 8px; border: 1px solid var(--border-color);
+            background-color: var(--surface-color); color: var(--text-color);
+            font-size: 1rem; transition: all 0.3s ease;
+        }
+        #search-input:focus {
+            outline: none; border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+        }
+        #status { text-align: center; font-size: 1.1rem; margin: 4rem 0; color: var(--text-secondary-color); }
+        #post-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        .post-card {
+            background-color: var(--surface-color); border: 1px solid var(--border-color);
+            border-radius: 12px; overflow: hidden; text-decoration: none;
+            color: var(--text-color); box-shadow: 0 4px 12px var(--shadow-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex; flex-direction: column;
+        }
+        .post-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px var(--shadow-color); }
+        .thumbnail-container { position: relative; width: 100%; aspect-ratio: 16 / 9; background-color: #000; display: block; }
+        .thumbnail-container img, .thumbnail-container video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; transition: opacity 0.3s ease;
+        }
+        .thumbnail-container .preview-video { opacity: 0; pointer-events: none; }
+        .post-card.has-video:hover .preview-video { opacity: 1; }
+        .post-card.has-video:hover .cover-image { opacity: 0; }
+        .card-content { padding: 1rem; flex-grow: 1; display: flex; flex-direction: column; }
+        .card-title {
+            font-size: 1rem; font-weight: 500; line-height: 1.4;
+            overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.75rem;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
+        .card-meta { margin-top: auto; padding-top: 0.75rem; border-top: 1px solid var(--border-color); }
+        .meta-line { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-secondary-color); }
+        .source-badge { padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 500; font-size: 0.7rem; color: #fff; text-transform: uppercase; }
+        .source-badge.missav { background-color: var(--source-missav-bg); }
+        .source-badge.onejav { background-color: var(--source-onejav-bg); }
+        .source-badge.javguru { background-color: var(--source-javguru-bg); }
+        .jav-search-buttons { margin-top: 0.75rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+        .jav-search-button {
+            display: flex; align-items: center; justify-content: center; text-decoration: none;
+            text-align: center; font-size: 0.75rem; background-color: #374151;
+            color: var(--text-color); font-weight: 500; padding: 0.5rem;
+            border-radius: 6px; transition: background-color 0.2s ease;
+        }
+        .jav-search-button:hover { background-color: #4b5563; }
+        .jav-search-button i { margin-right: 0.4rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="main-header">Unified Post Viewer</h1>
+        <div class="header-stats">
+            <span class="stat-item"><strong>Total Posts:</strong> <span id="stats-total">--</span></span>
+            <span class="stat-item"><strong>Last Scraped:</strong> <span id="stats-updated">--</span></span>
+        </div>
+        
+        <div class="filter-container" id="filter-container">
+            <!-- Filter buttons will be dynamically generated here -->
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search by title or JAV code...">
+        </div>
+        <p id="status">Loading data from all sources...</p>
+        <div id="post-grid"></div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const grid = document.getElementById('post-grid');
+        const status = document.getElementById('status');
+        const searchInput = document.getElementById('search-input');
+        const statsTotal = document.getElementById('stats-total');
+        const statsUpdated = document.getElementById('stats-updated');
+        const filterContainer = document.getElementById('filter-container');
+
+        const dataStore = {
+            all: { posts: [], stats: { total: 0, last_fetched: 0 } },
+        };
+        let currentView = 'all';
+
+        // --- Data Standardization ---
+        function standardizePost(post, source) {
+            return {
+                title: post.title || post.text,
+                page_link: post.page_link || post.link,
+                cover_image_url: post.cover_image_url || post.image_source,
+                preview_video_url: post.preview_video_url || null,
+                source_website: source.source_website || 'Unknown',
+                post_fetched_date: post.post_fetched_date,
+            };
+        }
+        
+        const extractJavCode = (title) => {
+            if (!title) return { display: 'N/A', search: '' };
+            const match = title.match(/([A-Z]{2,5})-?(\d{3,5})/i);
+            if (match) {
+                const codeForSearch = match[1] + match[2];
+                const codeForDisplay = `${match[1].toUpperCase()}-${match[2]}`;
+                return { display: codeForDisplay, search: codeForSearch.toUpperCase() };
+            }
+            return { display: 'N/A', search: '' };
+        };
+
+        // --- Main Application Logic ---
+        async function initializeApp() {
+            const JSON_FILES = ['playlist.json', 'onejav.json', 'javguru.json'];
+            const fetchPromises = JSON_FILES.map(url =>
+                fetch(url).then(res => {
+                    if (!res.ok) { console.warn(`Could not load ${url}.`); return null; }
+                    return res.json();
+                }).catch(err => { console.error(`Error fetching ${url}:`, err); return null; })
+            );
+
+            const results = await Promise.all(fetchPromises);
+            
+            results.forEach(data => {
+                if (data && data.posts && Array.isArray(data.posts)) {
+                    const sourceNameKey = data.source_website.toLowerCase().replace('.','');
+                    const standardized = data.posts.map(p => standardizePost(p, data));
+                    
+                    dataStore[sourceNameKey] = {
+                        posts: standardized,
+                        stats: {
+                            total: data.total_videos,
+                            last_fetched: new Date(data.last_fetched)
+                        }
+                    };
+                    dataStore.all.posts.push(...standardized);
+                }
+            });
+            
+            // Sort the 'all' view and calculate its stats
+            dataStore.all.posts.sort((a, b) => new Date(b.post_fetched_date) - new Date(a.post_fetched_date));
+            dataStore.all.stats.total = dataStore.all.posts.length;
+            const latestFetch = Math.max(0, ...Object.values(dataStore).filter(d=>d.stats.last_fetched).map(d => d.stats.last_fetched.getTime()));
+            dataStore.all.stats.last_fetched = latestFetch ? new Date(latestFetch) : null;
+
+            if (dataStore.all.posts.length === 0) {
+                status.textContent = 'No posts found. Run the Python scraper scripts first.';
+                return;
+            }
+            
+            status.style.display = 'none';
+            createFilterButtons();
+            updateView('all');
+        }
+
+        // --- FIXED: This function no longer creates duplicate buttons ---
+        function createFilterButtons() {
+            filterContainer.innerHTML = ''; // Clear any previous buttons
+
+            // Create 'All' button first
+            const allBtn = document.createElement('button');
+            allBtn.className = 'filter-btn';
+            allBtn.textContent = 'All Sources';
+            allBtn.dataset.view = 'all';
+            allBtn.addEventListener('click', () => updateView('all'));
+            filterContainer.appendChild(allBtn);
+
+            // Create buttons for each source that has data, explicitly skipping 'all'
+            Object.keys(dataStore).forEach(sourceKey => {
+                if (sourceKey === 'all') return; // Skip the 'all' key
+
+                const sourceData = dataStore[sourceKey];
+                if (sourceData && sourceData.posts.length > 0) {
+                    const sourceName = sourceData.posts[0].source_website;
+                    const btn = document.createElement('button');
+                    btn.className = 'filter-btn';
+                    btn.textContent = sourceName;
+                    btn.dataset.view = sourceKey;
+                    btn.addEventListener('click', () => updateView(sourceKey));
+                    filterContainer.appendChild(btn);
+                }
+            });
+        }
+        
+        function updateView(view) {
+            currentView = view;
+            searchInput.value = ''; // Reset search on view change
+
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === view);
+            });
+
+            const viewData = dataStore[view];
+            if (!viewData) return;
+
+            // Update stats
+            statsTotal.textContent = viewData.stats.total || '0';
+            statsUpdated.textContent = viewData.stats.last_fetched ? viewData.stats.last_fetched.toLocaleString() : 'N/A';
+            
+            renderPosts(viewData.posts);
+        }
+
+        function renderPosts(posts) {
+            if (!posts || posts.length === 0) {
+                grid.innerHTML = `<p id="status" style="display:block;">No posts found for this view.</p>`;
+                return;
+            }
+            grid.innerHTML = posts.map(post => {
+                const hasVideo = post.preview_video_url ? 'has-video' : '';
+                const fetchedDate = new Date(post.post_fetched_date).toLocaleDateString();
+                const sourceClass = post.source_website.toLowerCase().replace('.', '');
+                const { display: javCodeDisplay, search: javCodeSearch } = extractJavCode(post.title);
+                
+                const javSearchHTML = javCodeSearch ? `
+                    <div class="jav-search-buttons">
+                        <a href="https://sukebei.nyaa.si/?f=0&c=0_0&q=${javCodeDisplay}" target="_blank" rel="noopener noreferrer" class="jav-search-button"><i class="fa-solid fa-cat"></i>Sukebei</a>
+                        <a href="https://www.javdatabase.com/?s=${javCodeDisplay}" target="_blank" rel="noopener noreferrer" class="jav-search-button"><i class="fa-solid fa-database"></i>JavDB</a>
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="post-card ${hasVideo}" data-jav-code="${javCodeDisplay}">
+                        <a href="${post.page_link}" target="_blank" class="thumbnail-container">
+                            <img class="cover-image" src="${post.cover_image_url}" alt="${post.title}" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/400x225/1e1e1e/e5e7eb?text=Image+Failed';">
+                            ${hasVideo ? `<video class="preview-video" loop muted playsinline preload="none" data-src="${post.preview_video_url}"></video>` : ''}
+                        </a>
+                        <div class="card-content">
+                            <h3 class="card-title">${post.title}</h3>
+                            <div class="card-meta">
+                                <div class="meta-line">
+                                    <span class="source-badge ${sourceClass}">${post.source_website}</span>
+                                    <span>Added: ${fetchedDate}</span>
+                                </div>
+                                ${javSearchHTML}
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+            
+            addHoverListeners();
+        }
+
+        function addHoverListeners() {
+            document.querySelectorAll('.post-card.has-video').forEach(card => {
+                const video = card.querySelector('.preview-video');
+                let isLoaded = false;
+                card.addEventListener('mouseenter', () => {
+                    if (!isLoaded && video) { video.src = video.dataset.src; video.load(); isLoaded = true; }
+                    const playPromise = video.play();
+                    if (playPromise) playPromise.catch(()=>{});
+                });
+                card.addEventListener('mouseleave', () => { if (video) { video.pause(); video.currentTime = 0; }});
+            });
+        }
+        
+        searchInput.addEventListener('input', e => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const sourceData = dataStore[currentView].posts;
+            
+            const filteredPosts = sourceData.filter(post => {
+                const titleMatch = post.title.toLowerCase().includes(searchTerm);
+                const codeMatch = extractJavCode(post.title).display.toLowerCase().includes(searchTerm);
+                return titleMatch || codeMatch;
+            });
+            renderPosts(filteredPosts);
+        });
+        
+        initializeApp();
+    });
+    </script>
+</body>
+</html>

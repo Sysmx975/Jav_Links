@@ -16,31 +16,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Make scripts executable
+      - name: Run FlareSolverr Docker
+        run: docker run -d --name=flaresolverr -p 8191:8191 -e LOG_LEVEL=info --restart unless-stopped ghcr.io/flaresolverr/flaresolverr:latest
+
+      - name: Install Deps
         run: |
-          chmod +x start.sh
-          chmod +x main.sh
-
-      - name: Run start.sh
-        run: ./start.sh
-
-      - name: Run main.sh
-        run: ./main.sh
-
-      - name: Move sources.txt and links.txt to docs folder
+            pip install cloudscraper bs4 tqdm
+      
+      - name: Scraping Script
         run: |
-          mkdir -p docs
-          mv failed.txt docs/failed.txt
-          mv final_links.csv docs/links.csv
-          mv sources.txt docs/sources.txt
+           bash start.sh
+
+      - name: Commit and push if JSON files changed
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add *.json
           
-      - name: Configure Git
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-      - name: Commit and push changes
-        run: |
-          git add docs/sources.txt docs/failed.txt docs/links.csv
-          git commit -m "Add sources.txt and links.txt to docs folder"
-          git push
+          # Check if there are any staged changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            # Commit and push the changes
+            git commit -m "Automated data update: $(date -u)"
+            git push
+          fi

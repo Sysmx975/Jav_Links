@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playlist Viewer</title>
+    <style>
+        /* --- Google Font & Basic Setup --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
+        :root {
+            --bg-color: #1c1c1e;
+            --surface-color: #2c2c2e;
+            --primary-color: #0A84FF; /* A clean blue for accents */
+            --text-color: #F2F2F7;
+            --text-secondary-color: #8E8E93;
+            --shadow-color: rgba(0, 0, 0, 0.25);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1.5rem;
+        }
+
+        /* --- Main Layout & Header --- */
+        .container { max-width: 1800px; margin: 0 auto; }
+        .main-header {
+            text-align: center;
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+        .header-stats {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary-color);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .stat-item strong { color: var(--text-color); }
+
+        /* --- Search Bar --- */
+        .search-container { margin: 0 auto 2.5rem auto; max-width: 500px; }
+        #search-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--surface-color);
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        #search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.3);
+        }
+        
+        #status { text-align: center; font-size: 1.1rem; margin: 4rem 0; color: var(--text-secondary-color); }
+
+        /* --- Grid & Card Styles --- */
+        #post-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        .post-card {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            overflow: hidden;
+            text-decoration: none;
+            color: var(--text-color);
+            box-shadow: 0 2px 8px var(--shadow-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .post-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+        .thumbnail-container { position: relative; width: 100%; aspect-ratio: 16 / 9; background-color: #111; }
+        .thumbnail-container img, .thumbnail-container video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; transition: opacity 0.3s ease;
+        }
+        .thumbnail-container .preview-video { opacity: 0; pointer-events: none; }
+        .post-card:hover .preview-video { opacity: 1; }
+        .post-card:hover .cover-image { opacity: 0; }
+        .card-content { padding: 1rem; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between;}
+        .card-title {
+            font-size: 1rem; font-weight: 500; line-height: 1.4;
+            overflow: hidden; text-overflow: ellipsis;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: 0.5rem;
+        }
+        .card-fetched-date {
+            font-size: 0.75rem;
+            color: var(--text-secondary-color);
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="main-header">Playlist Viewer</h1>
+        <div class="header-stats">
+            <span class="stat-item"><strong>Total Videos:</strong> <span id="stats-total">--</span></span>
+            <span class="stat-item"><strong>Last Updated:</strong> <span id="stats-updated">--</span></span>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search by title...">
+        </div>
+        
+        <p id="status">Loading posts from posts.json...</p>
+        <div id="post-grid"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('post-grid');
+            const status = document.getElementById('status');
+            const searchInput = document.getElementById('search-input');
+            const statsTotal = document.getElementById('stats-total');
+            const statsUpdated = document.getElementById('stats-updated');
+
+            let allPosts = [];
+
+            // --- Main application logic ---
+            function initializeApp() {
+                fetch('posts.json')
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}. Make sure 'posts.json' exists.`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        // --- FIX: This block now handles BOTH old and new JSON formats ---
+                        let postData = [];
+                        
+                        // Check for the NEW format (an object with a 'posts' property)
+                        if (typeof data === 'object' && data !== null && data.posts && Array.isArray(data.posts)) {
+                            postData = data.posts;
+                            statsTotal.textContent = data.total_videos || 'N/A';
+                            statsUpdated.textContent = new Date(data.last_fetched).toLocaleString();
+                        } 
+                        // Check for the OLD format (a simple array)
+                        else if (Array.isArray(data)) {
+                            console.warn("Detected old 'posts.json' format. Some features like 'Last Updated' may be unavailable.");
+                            postData = data;
+                            statsTotal.textContent = data.length; // Can still count the videos
+                            statsUpdated.textContent = 'N/A'; // 'last_fetched' is not available in old format
+                        } 
+                        // If neither, the format is invalid
+                        else {
+                            throw new Error("Invalid 'posts.json' format. Expected an object with a 'posts' array or just an array of posts.");
+                        }
+                        
+                        // Sort posts by date, newest first. Gracefully handles missing date field.
+                        allPosts = postData.sort((a, b) => {
+                            const dateA = a.post_fetched_date ? new Date(a.post_fetched_date) : 0;
+                            const dateB = b.post_fetched_date ? new Date(b.post_fetched_date) : 0;
+                            return dateB - dateA;
+                        });
+                        
+                        if (allPosts.length === 0) {
+                            status.textContent = 'No posts found in the JSON file.';
+                            return;
+                        }
+                        
+                        status.style.display = 'none';
+                        renderPosts(allPosts);
+                    })
+                    .catch(error => {
+                        console.error('Error loading or parsing posts.json:', error);
+                        status.textContent = `Error: Could not load posts. ${error.message}`;
+                    });
+            }
+
+            // --- Renders posts to the grid ---
+            function renderPosts(posts) {
+                let postsHTML = '';
+                posts.forEach(post => {
+                    // Check if 'post_fetched_date' exists before trying to display it
+                    const fetchedDateText = post.post_fetched_date 
+                        ? `Added: ${new Date(post.post_fetched_date).toLocaleDateString()}`
+                        : '';
+
+                    postsHTML += `
+                        <a href="${post.page_link}" target="_blank" class="post-card">
+                            <div class="thumbnail-container">
+                                <img class="cover-image" src="${post.cover_image_url}" alt="${post.title}" loading="lazy">
+                                <video class="preview-video" loop muted playsinline preload="none" data-src="${post.preview_video_url}"></video>
+                            </div>
+                            <div class="card-content">
+                                <h3 class="card-title">${post.title}</h3>
+                                <div class="card-fetched-date">${fetchedDateText}</div>
+                            </div>
+                        </a>
+                    `;
+                });
+                grid.innerHTML = postsHTML;
+                addHoverListeners();
+            }
+
+            // --- Adds hover listeners for video previews ---
+            function addHoverListeners() {
+                document.querySelectorAll('.post-card').forEach(card => {
+                    const video = card.querySelector('.preview-video');
+                    let isLoaded = false;
+                    card.addEventListener('mouseenter', () => {
+                        if (!isLoaded) { video.src = video.dataset.src; video.load(); isLoaded = true; }
+                        const playPromise = video.play();
+                        if (playPromise) playPromise.catch(err => {}); // Silently handle play errors
+                    });
+                    card.addEventListener('mouseleave', () => { video.pause(); video.currentTime = 0; });
+                });
+            }
+            
+            // --- EVENT LISTENERS ---
+
+            // Search input
+            searchInput.addEventListener('input', e => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredPosts = allPosts.filter(post => post.title.toLowerCase().includes(searchTerm));
+                renderPosts(filteredPosts);
+                
+                status.style.display = filteredPosts.length === 0 ? 'block' : 'none';
+                status.textContent = 'No posts match your search.';
+            });
+            
+            // Start the application
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
