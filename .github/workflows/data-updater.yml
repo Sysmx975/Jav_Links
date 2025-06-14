@@ -27,7 +27,7 @@ jobs:
         run: |
            bash start.sh
 
-   - name: Commit and push updated site and data
+      - name: Commit and push updated site and data
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
