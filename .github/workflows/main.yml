@@ -23,12 +23,6 @@ jobs:
         run: |
             pip install cloudscraper bs4 tqdm
       
-      - name: Archive Jsons
-        run: |
-          JSON_FILES="playlist.json javguru.json onejav.json" 
-          ARCHIVE_PATH="archive/$(date +%Y-%m-%d)"
-          mkdir -p "$ARCHIVE_PATH" && mv $JSON_FILES "$ARCHIVE_PATH/"
-      
       - name: Scraping Script
         run: |
            bash start.sh
@@ -38,7 +32,6 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add *.json  # For the new JSONs in the root
-          git add archive/ # For the archived JSONs and the new dated folder
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
