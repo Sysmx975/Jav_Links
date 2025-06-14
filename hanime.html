@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Collection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Plyr.io Video Player CSS -->
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: #9ca3af; /* text-gray-400 */
+        }
+        /* Custom black scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background-color: #374151; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #4b5563; }
+        
+        /* Fade-in animation */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .card-animation { animation: fadeIn 0.6s ease-in-out forwards; }
+        
+        /* Card overlay styles */
+        .card-overlay { opacity: 0; transition: opacity 0.3s ease-in-out; }
+        .group:hover .card-overlay { opacity: 1; }
+
+        /* Video Player Modal Styles */
+        #player-modal {
+            display: none; /* Hidden by default */
+            transition: opacity 0.3s ease;
+        }
+        
+        /* Plyr.io theme customizations */
+        :root {
+            --plyr-color-main: #7c3aed; /* Indigo-600 */
+            --plyr-video-background: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header & Search -->
+        <header class="mb-8">
+            <input type="text" id="search-input" placeholder="Search..." class="w-full max-w-md mx-auto block px-4 py-2 bg-[#111] border border-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-600 text-gray-300 placeholder-gray-500 transition duration-300">
+        </header>
+
+        <!-- Posts Grid -->
+        <main id="posts-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <!-- Post cards will be dynamically inserted here -->
+        </main>
+        
+        <!-- Loading/Error Message -->
+        <div id="message-container" class="text-center py-20"></div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div id="player-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
+        <div class="w-full max-w-4xl max-h-full aspect-video relative">
+            <video id="video-player" playsinline controls></video>
+            <!-- Close button -->
+            <button id="close-player-btn" class="absolute -top-2 -right-2 md:-top-4 md:-right-4 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center text-xl font-bold hover:scale-110 transition-transform">&times;</button>
+        </div>
+    </div>
+
+    <!-- Plyr.io Video Player JS -->
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const postsGrid = document.getElementById('posts-grid');
+            const searchInput = document.getElementById('search-input');
+            const messageContainer = document.getElementById('message-container');
+            const playerModal = document.getElementById('player-modal');
+            const videoPlayer = document.getElementById('video-player');
+            const closePlayerBtn = document.getElementById('close-player-btn');
+
+            let allPosts = [];
+            let player = null; // To hold the Plyr instance
+
+            const showMessage = (html) => {
+                messageContainer.innerHTML = html;
+            };
+
+            // --- Player Functions ---
+            const openPlayer = (videoUrl) => {
+                if (!videoUrl || videoUrl === 'N/A') return;
+                
+                playerModal.style.display = 'flex';
+                // Use a slight delay to allow the modal to display before fading in
+                setTimeout(() => playerModal.style.opacity = 1, 10);
+                
+                // Set the video source
+                videoPlayer.src = videoUrl;
+
+                // Destroy previous instance if it exists
+                if (player) {
+                    player.destroy();
+                }
+
+                // Initialize Plyr
+                player = new Plyr(videoPlayer, {
+                    // Plyr options can go here
+                    title: 'Video Player',
+                    autoplay: true,
+                });
+            };
+
+            const closePlayer = () => {
+                playerModal.style.opacity = 0;
+                 // Use a slight delay to allow the fade out animation before hiding
+                setTimeout(() => {
+                    playerModal.style.display = 'none';
+                    if (player) {
+                        player.stop(); // Stop playback
+                        player.destroy();
+                        player = null;
+                    }
+                    videoPlayer.src = ''; // Clear source
+                }, 300);
+            };
+
+            // --- Card & Rendering Functions ---
+            const createPostCard = (post) => {
+                const card = document.createElement('div');
+                card.className = 'group relative aspect-[2/3] bg-[#111] rounded-lg overflow-hidden card-animation';
+                
+                const imageSrc = post.image_url && post.image_url !== 'N/A' 
+                    ? post.image_url 
+                    : `https://placehold.co/400x600/000000/333333?text=${encodeURIComponent(post.title)}`;
+
+                card.innerHTML = `
+                    <img src="${imageSrc}" alt="${post.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/400x600/000000/333333?text=Error';">
+                    <div class="absolute inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center p-4 text-center card-overlay">
+                        <h3 class="font-semibold text-base text-gray-200">${post.title}</h3>
+                        <button data-video-url="${post.direct_video_link}" class="watch-btn mt-4 inline-block text-sm border border-gray-600 text-gray-300 py-1 px-4 rounded-full hover:bg-white hover:text-black transition-colors duration-300 ${post.direct_video_link === 'N/A' ? 'opacity-30 cursor-not-allowed' : ''}">
+                            Watch
+                        </button>
+                    </div>
+                `;
+                return card;
+            };
+
+            const renderPosts = (posts) => {
+                postsGrid.innerHTML = '';
+                if (posts.length === 0) {
+                    showMessage('<h2 class="text-xl font-semibold text-gray-500">No matches found.</h2>');
+                } else {
+                    showMessage('');
+                }
+                posts.forEach(post => {
+                    postsGrid.appendChild(createPostCard(post));
+                });
+            };
+            
+            // --- Data & Filtering Logic ---
+            const filterContent = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const filteredPosts = searchTerm 
+                    ? allPosts.filter(post => 
+                        post.title.toLowerCase().includes(searchTerm) || 
+                        post.genres.some(genre => genre.toLowerCase().includes(searchTerm))
+                      )
+                    : allPosts;
+                renderPosts(filteredPosts);
+            };
+
+            const loadData = async () => {
+                showMessage('<h2 class="text-xl font-semibold text-gray-500">Loading...</h2>');
+                try {
+                    const response = await fetch('hanime.json');
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    allPosts = await response.json();
+                    
+                    if (!allPosts || allPosts.length === 0) {
+                        throw new Error('JSON data is empty or invalid.');
+                    }
+                    
+                    renderPosts(allPosts);
+
+                } catch (error) {
+                    console.error('Failed to load posts:', error);
+                    showMessage(`
+                        <div class="text-center text-red-500">
+                            <h2 class="text-xl font-semibold">Failed to Load Posts</h2>
+                            <p class="mt-1 text-gray-600">Could not find or parse <strong>all_posts_with_links.json</strong>.</p>
+                        </div>
+                    `);
+                }
+            };
+
+            // --- Event Listeners ---
+            searchInput.addEventListener('input', filterContent);
+            closePlayerBtn.addEventListener('click', closePlayer);
+            
+            // Event delegation for watch buttons
+            postsGrid.addEventListener('click', (e) => {
+                if (e.target.classList.contains('watch-btn')) {
+                    const videoUrl = e.target.dataset.videoUrl;
+                    openPlayer(videoUrl);
+                }
+            });
+
+            // Close player when clicking outside the video
+            playerModal.addEventListener('click', (e) => {
+                if (e.target === playerModal) {
+                    closePlayer();
+                }
+            });
+
+            loadData();
+        });
+    </script>
+
+</body>
+</html>
