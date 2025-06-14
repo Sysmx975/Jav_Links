@@ -234,7 +234,7 @@
 
         // --- Main Application Logic ---
         async function initializeApp() {
-            const JSON_FILES = ['javguru.json','onejav.json','playlist.json'];
+            const JSON_FILES = ['data/javguru.json','data/onejav.json','data/playlist.json'];
             const fetchPromises = JSON_FILES.map(url =>
                 fetch(url).then(res => {
                     if (!res.ok) { console.warn(`Could not load ${url}.`); return null; }
@@ -302,6 +302,14 @@
                     filterContainer.appendChild(btn);
                 }
             });
+
+            // ADDED: Create a button that links to hanime.html
+            const hanimeBtn = document.createElement('a');
+            hanimeBtn.className = 'filter-btn';
+            hanimeBtn.textContent = 'Hanime';
+            hanimeBtn.href = 'hanime.html';
+            hanimeBtn.style.textDecoration = 'none'; // Remove underline from anchor tag
+            filterContainer.appendChild(hanimeBtn);
         }
         
         function updateView(view) {

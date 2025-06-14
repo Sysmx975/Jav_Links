@@ -31,12 +31,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          
-          # Stage changes in both the data and docs directories
-          git add data/
           git add docs/
-          
-          # Check if there are any staged changes to commit
           if git diff --staged --quiet; then
             echo "No changes to site or data. Nothing to commit."
           else

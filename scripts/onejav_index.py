@@ -9,7 +9,7 @@ from tqdm import tqdm # <-- FIXED: Added this import for the progress bar
 
 # --- Configuration ---
 BASE_URL = "https://onejav.com/"
-POSTS_FILE = "data/onejav.json" # Output file for this script
+POSTS_FILE = "docs/data/onejav.json" # Output file for this script
 DAYS_TO_SCRAPE = 30
 
 def parse_posts_from_html(soup, base_url, fetch_time):

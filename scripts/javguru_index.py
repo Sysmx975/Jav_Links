@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 # --- Configuration ---
 BASE_URL = "https://jav.guru/"
-POSTS_FILE = "data/javguru.json"
+POSTS_FILE = "docs/data/javguru.json"
 MAX_PAGES_TO_SCRAPE = 15
 
 def load_existing_links(filename):
