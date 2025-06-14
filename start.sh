@@ -1,4 +1,4 @@
-python onejav_index.py
-python javguru_index.py
-python hanime_index.py
-python playlist_index.py
+python scripts/onejav_index.py
+python scripts/javguru_index.py
+python scripts/hanime_index.py
+python scripts/playlist_index.py

@@ -137,7 +137,7 @@ if __name__ == "__main__":
     # --- Configuration ---
     FLARESOLVERR_URL = "http://localhost:8191"
     BASE_WEBSITE_URL = "https://hanimes.org/tag/hanime/"
-    OUTPUT_JSON_FILE = "hanime.json"
+    OUTPUT_JSON_FILE = "data/hanime.json"
     MAX_WORKERS = 11 # Number of concurrent threads for fetching video links
 
     print(f"Starting scraper for: {BASE_WEBSITE_URL}")

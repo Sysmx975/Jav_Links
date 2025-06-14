@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # --- Configuration ---
 FLARESOLVERR_URL = "http://localhost:8191/v1"
 START_URL = "https://missav.ws/en/playlists/dprelff6"
-POSTS_FILE = "playlist.json"  # Output file for this script
+POSTS_FILE = "data/playlist.json"  # Output file for this script
 MAX_WORKERS = 11
 
 def load_existing_posts(filename):
